@@ -1,0 +1,19 @@
+{
+    "author":"NStal"
+    ,"name":"common-rpc"
+    ,"description":"an common rpc module support ws/http"
+    ,"version":"0.0.1"
+    ,"keyword":["rpc"]
+    ,"engine":{
+	"node":"*" 
+    }
+    ,"directories":{
+	"lib":"./lib"
+    }
+    ,"dependencies":{
+	"ws":"*"
+	,"coffee-script":"*"
+	
+    },
+    "main":"./lib/rpc.js"
+}
