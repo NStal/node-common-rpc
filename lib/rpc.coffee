@@ -59,6 +59,8 @@ class RPCServer extends events.EventEmitter
             client.write @createResponseString({error:"Invalid Parameter",ticket:req.ticket})
             return
         req.args.push (err,data)=>
+            if err instanceof Error
+                err = {message:err.message,name:err.name}
             client.write @createResponseString({error:err,data:data,ticket:req.ticket})
         @[req.name].apply this,req.args
     createResponseString:(data)->
