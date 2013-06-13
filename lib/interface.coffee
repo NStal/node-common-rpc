@@ -84,6 +84,10 @@ class RPCInterface extends events.EventEmitter
         for session,index in @_callSessions
             if session.ticket is rsp.ticket
                 @_callSessions.splice(index,1)
+                if rsp.error and rsp.error.name and rsp.error.message
+                    name = rsp.error.name 
+                    rsp.error = new Error rsp.error.message
+                    rsp.name = name
                 session.callback(rsp.error,rsp.data)
                 return
         Log.warn "Unexpect response ticket",rsp
