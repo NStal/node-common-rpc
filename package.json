@@ -2,7 +2,7 @@
     "author":"NStal"
     ,"name":"common-rpc"
     ,"description":"an common rpc module support ws/http"
-    ,"version":"0.0.1"
+    ,"version":"0.0.2"
     ,"keyword":["rpc"]
     ,"engine":{
 	"node":"*" 

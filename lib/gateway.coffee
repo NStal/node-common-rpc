@@ -11,6 +11,8 @@ class Gateway extends events.EventEmitter
         @tunnels = []
         Gateway.instances.push this
     close:()->
+        @closeIfNotClosed()
+    closeIfNotClosed:()->
         if @isClose
             return
         @isClose = true
@@ -19,6 +21,7 @@ class Gateway extends events.EventEmitter
         for item in @tunnels
             item.close(true)
         @tunnels = []
+        @emit "close"
 
 class WebSocketGateway extends Gateway
     constructor:(port,host)->
@@ -32,11 +35,12 @@ class WebSocketGateway extends Gateway
             @tunnels.push tunnel
         @server.on "error",(err)=>
             @emit "error",err
-            @close()
+            @closeIfNotClosed()
+        @server.on "close",()=>
+            @closeIfNotClosed()
 Gateway.instances = []
 Gateway.clear = ()->
     for gateway in Gateway.instances
-        console.log "clear server"
         gateway.close()
 exports.Gateway = Gateway
 exports.WebSocketGateway = WebSocketGateway

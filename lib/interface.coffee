@@ -4,10 +4,10 @@ Tunnel = (require "./tunnel.coffee").Tunnel
 protocol = require "./protocol.coffee"
 events = require "events"
 class RPCSession
-    constructor:(name,args,callback)->
+    constructor:(name,args,callback)-> 
         @ticket = parseInt(Math.random()*1000000000)
         @name = name
-        @args = args
+        @args = args 
         @callback = (_args...)=>
             if @done
                 return
@@ -26,25 +26,36 @@ class RPCInterface extends events.EventEmitter
         @_callSessions = [];
         @_callSessionBuffers = []
         @timeout = 1000 * 10;
-        @setTunnel(tunnel)
+        @reconnectInterval = 500
+        @setTunnel(tunnel) 
     setTunnel:(tunnel)->
+        @allowReconnect = true
         if @tunnel
             # force close the old tunnel
-            @tunnel.close(true)
+            @tunnel.close()
         @tunnel = tunnel
         @tunnel.on "error",(err)=>
-            # panic...,OK may be just small mistake
+            if err and err.code is "ECONNREFUSED"
+                # ECONNREFUSED will not file close event
+                @_isReconnect = false
+                @_tryReconnect()
+                return
+            # panic..., OK may be just small mistake 
             Log.error "tunnel error",err
-        @tunnel.on "close",(force)=>
+            @emit "error",err
+        @tunnel.on "close",()=>
             # not closing buffers, let it timeout
             # in case tunnel end before data call
             # if not force close try reconnect
-            if not force
-                @_tryReconnect()
+            @isReady = false
+            @_isReconnect = false
+            @_tryReconnect()
         @tunnel.on "ready",()=>
             @_isReconnect = false
             @_flushSessionBuffers()
+            @isReady = true
         if @tunnel.isReady
+            @isReady = true
             @_isReconnect = false
             @_flushSessionBuffers()
         @tunnel.on "data",(data)=>
@@ -60,9 +71,11 @@ class RPCInterface extends events.EventEmitter
             @_handleResponse(json)
             
     close:()->
-        @isClose = true
+        # force close
+        @allowReconnect = false
         if @tunnel
-            @tunnel.close(true)
+            @tunnel.close()
+        @isReady = false
         @tunnel = null
     initRemoteConfig:(config)->
         # @remoteKey = config.key
@@ -108,22 +121,29 @@ class RPCInterface extends events.EventEmitter
     _tryReconnect:()->
         # try to ask tunnel to reconnect
         # if failed clear buffers
-
+        if not @allowReconnect
+            Log.log "force close, not reconnect."
+            @emit "close"
+            return
         # not connecting and tunnel is set
         if @_isReconnect or not @tunnel
+            Log.log "RPCInterfcae can't reconnect"
+            @emit "close"
             return
         # when ask reconnect the
         # tunnel should return false if it's "IMPOSIBLE"
         # to reconnect
         
-        result = @tunnel.reconnect()
-        if not result
+        if not @tunnel or  not @tunnel.canReconnect
             # tunnel is imposibale to reconnect
-            @clearSessionBuffers(new Error("Connection Fail"))
+            @clearSessions(new Error("Connection Fail"))
             @emit "close"
-            return
-        else
-            @_isReconnect = true
+            return 
+        @_isReconnect = true
+        setTimeout (()=> 
+            @tunnel.reconnect()
+            ),@reconnectInterval
+        
         # if can't reconnect
         # use an new tunnel
     _flushSessionBuffers:()->
@@ -147,7 +167,7 @@ class RPCInterface extends events.EventEmitter
             if not fromServer
                 Log.warn "duplicate remote call"
             else
-                Log.log "reconfig from server"
+                Log.warn "reconfig from server"
         rpc = (args...)->
             callback = null
             # check call count
@@ -202,6 +222,7 @@ RPCInterface.create = (info,callback)->
             if not done
                 done = true 
                 callback new Error "Connection Closed"
+            
         inf.on "config",()->
             if not done
                 done = true

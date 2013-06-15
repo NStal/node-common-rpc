@@ -26,6 +26,8 @@ class RPCServer extends events.EventEmitter
                 Log.error "tunnel:",tunnel
         @gateway.on "error",(err)=>
             @emit "error",err
+        @gateway.on "close",()=>
+            @emit "close"
     serve:(obj)->
         for item of obj
             if typeof obj[item] is "function"

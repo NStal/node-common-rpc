@@ -4,7 +4,7 @@
 
   rpc = require("../lib/rpc.coffee");
 
-  rpc.Log.verboseLevel = 0;
+  rpc.Log.verboseLevel = 3;
 
   WebSocketGateway = rpc.WebSocketGateway;
 
@@ -25,6 +25,11 @@
           return setTimeout((function() {
             return callback(null, true);
           }), 1000 * 5);
+        },
+        doTimeout2s: function(callback) {
+          return setTimeout((function() {
+            return callback(null, true);
+          }), 1000 * 2);
         },
         giveError: function(callback) {
           return callback("Error");
@@ -68,15 +73,30 @@
         return done(new Error("Didnt give an error"));
       });
     });
-    it("test timeout 2s", function(done) {
+    it("test timeout 1s", function(done) {
+      var OK;
       Static.autoInf.timeout = 1 * 1000;
-      return Static.autoInf.doTimeout5s(function(err, result) {
+      OK = false;
+      Static.autoInf.doTimeout2s(function(err, result) {
         if (!err || err.message !== "Timeout") {
           throw new Error("Not Timeout");
           return;
         }
+        return OK = true;
+      });
+      return setTimeout((function() {
+        if (OK) {
+          return done();
+        } else {
+          throw new Error("Server timeout2s call not return");
+        }
+      }), 3000);
+    });
+    it("close auto config interface", function(done) {
+      Static.autoInf.once("close", function() {
         return done();
       });
+      return Static.autoInf.close();
     });
     it("create non auto index interface", function(done) {
       var inf;
@@ -101,15 +121,20 @@
         return done();
       });
     });
+    it("test gateway close", function(done) {
+      Static.server.gateway.once("close", function() {
+        return done();
+      });
+      return Static.server.close();
+    });
     it("reconnect after server close should flush buffers until it open", function(done) {
       var inf;
-      Static.server.gateway.close();
       inf = RPCInterface.create({
         type: "ws",
         host: "localhost",
         port: 31023
       });
-      inf.timeout = 1 * 1000;
+      inf.timeout = 1 * 5000;
       inf.initRemoteConfig({
         publicCalls: [
           {
@@ -124,7 +149,9 @@
         }
         return done();
       });
-      return Static.server.setGateway(new WebSocketGateway(31023));
+      return setTimeout((function() {
+        return Static.server.setGateway(new WebSocketGateway(31023));
+      }), 100);
     });
     return it("reconnect after server close should throw timeout", function(done) {
       var inf;
