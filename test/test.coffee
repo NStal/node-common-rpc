@@ -20,7 +20,11 @@ describe "Basic Test",()->
                     ),1000 * 2
             giveError:(callback)->
                 callback "Error"
+            giveComplexJsonObject:(callback)->
+                callback null,{a:5,b:"char",c:[],d:null,e:[1],f:["1"]}
             }
+                
+            
         Static.server.once "ready",()->
             done()
     it "create auto config interface",(done)->
@@ -31,14 +35,26 @@ describe "Basic Test",()->
             done()
     it "test normal add rpc",(done)->
         Static.autoInf.add 5,6,(err,result)->
-            console.log "add 5 6 result",err,result
             if err
                 throw err
                 return
             done()
+    it "test comlex json response",(done)->
+        Static.autoInf.giveComplexJsonObject (err,result)->
+            console.assert result.a is 5
+            console.assert result.b is "char"
+            console.assert result.c instanceof Array
+            console.assert result.c.length is 0
+            console.assert result.d is null
+            console.assert result.e instanceof Array
+            console.assert result.e.length is 1
+            console.assert result.e[0] is 1
+            console.assert result.f instanceof Array
+            console.assert result.f.length is 1
+            console.assert result.f[0] is "1"
+            done()
     it "test error",(done)-> 
         Static.autoInf.giveError (err,result)->
-            console.log "giveError result",err,result
             if err
                 done()
                 return
