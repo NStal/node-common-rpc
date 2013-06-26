@@ -60,7 +60,7 @@ class WebSocketTunnel extends Tunnel
             @closeIfNotClosed()
         
         @ws.on "message",(data)=>
-            @emit "data",data
+            @emit "data",new Buffer(data,"base64").toString()
         @ws.on "error",(err)=>
             @emit "error",err
         @ws.on "close",()=>
@@ -88,7 +88,8 @@ class WebSocketTunnel extends Tunnel
             Log.error "Websocket Try Write Ad State #{@ws.readyState}"
             @emit "error",new Error "Websocket Not Ready To Write"
             return false
-        @ws.send data.toString()
+        
+        @ws.send new Buffer(data).toString("base64")
         return true
     close:()->
         @ws.close()
