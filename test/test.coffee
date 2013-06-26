@@ -21,7 +21,7 @@ describe "Basic Test",()->
             giveError:(callback)->
                 callback "Error"
             giveComplexJsonObject:(callback)->
-                callback null,{a:5,b:"char",c:[],d:null,e:[1],f:["1"]}
+                callback null,{a:5,b:"char",c:[],d:null,e:[1],f:["1"],g:{number:1,object:{number:1},array:[{number:1}]}}
             }
                 
             
@@ -52,6 +52,17 @@ describe "Basic Test",()->
             console.assert result.f instanceof Array
             console.assert result.f.length is 1
             console.assert result.f[0] is "1"
+            #g:{number:1,object:{number:1},array:[{number:1}]}
+            console.assert result.g
+            console.assert result.g.number is 1
+            console.assert result.g.object
+            
+            console.assert result.g.object.number is 1
+            console.assert result.g.array
+            console.assert result.g.array instanceof Array
+            console.assert result.g.array.length is 1
+            console.assert result.g.array[0].number is 1
+            
             done()
     it "test error",(done)-> 
         Static.autoInf.giveError (err,result)->
